@@ -1,133 +1,68 @@
 ---
-title: Welcome to Evidence
+title: Strava Data
 ---
 
-_Build polished data products with SQL and Markdown_
-
-This demo [connects](/settings) to a local DuckDB file `needful_things.duckdb`.
-
-<LineChart
-  data={orders_by_month}
-  y=sales
-  yFmt=usd0k
-  title = "Sales by Month, USD"
-/>
-
-## Write in Markdown
-
-Evidence renders markdown files into web pages. This page is:
-`[project]/pages/index.md`.
-
-## Run SQL using Code Fences
-
-```sql orders_by_month
+```sql activities_by_month
 select
-  date_trunc('month', order_datetime) as order_month,
-  count(*) as number_of_orders,
-  sum(sales) as sales,
-  sum(sales)/count(*) as average_order_value
-from orders
-where order_datetime >= '2020-01-01'
+  date_trunc('month', date_dt) as month,
+  count(*) as number_of_activities,
+  sum(activity_hours) as activity_hours,
+  sum(activity_distance / 1000) as distance_km 
+from activities
+where date_dt >= '2022-01-01'
 group by 1 order by 1 desc
 ```
+## Activity by Month
 
-In your markdown file, you can include SQL queries in code fences. Evidence will run these queries through your database and return the results to the page.
-
-<Alert status=info>  
-To see the queries on a page, click the 3-dot menu at the top right of the page and Show Queries. You can see both the SQL and the query results by interacting with the query above.
-</Alert>
-
-## Visualize Data with Components
-
-### Value in Text
-
-Last month customers placed **<Value data={orders_by_month} column=number_of_orders/>** orders. The AOV was **<Value data={orders_by_month} column=average_order_value fmt=usd2/>**.
-
-### Big Value 
-<BigValue data={orders_by_month} value=sales fmt=usd0/>
-<BigValue data={orders_by_month} value=number_of_orders />
-
-
-### Bar Chart
-
-<BarChart 
-  data={orders_by_month} 
-  x=order_month
-  y=number_of_orders 
-  fillColor="#488f96"
->
-  <ReferenceArea xMin="2020-03-15" xMax="2021-05-15" label="COVID Impacted" color=red/>
-</BarChart>
-
-> **Try:** Change the chart to a `<LineChart>`.
-
-### Data Table
-
-<DataTable data={orders_by_month} rows=6/>
-
-> **More:** See [all components](https://docs.evidence.dev/components/all-components)
-
-## Add Interactive Features
-
-The latest version of Evidence includes features that allow you to easily create interactive data visualizations.
-
-### Chart with Filter 
-
-```sql categories
-select
-    category
-from orders
-group by category
-```
-
-<Dropdown data={categories} name=category value=category>
-    <DropdownOption value="%" valueLabel="All Categories"/>
-</Dropdown>
-
-<Dropdown name=year>
-    <DropdownOption value=% valueLabel="All Years"/>
-    <DropdownOption value=2019/>
-    <DropdownOption value=2020/>
-    <DropdownOption value=2021/>
-</Dropdown>
-
-```sql orders_by_category
-select 
-    date_trunc('month', order_datetime) as month,
-    sum(sales) as sales_usd,
-    category
-from orders
-where category like '${inputs.category}'
-and date_part('year', order_datetime) like '${inputs.year}'
-group by all
-order by sales_usd desc
-```
-
-<BarChart
-    data={orders_by_category}
-    title="Sales by Month, {inputs.category}"
+<LineChart 
+    data={activities_by_month} 
     x=month
-    y=sales_usd
-    series=category
+    y=activity_hours 
+    y2=distance_km
+    y2SeriesType=bar
 />
 
+```sql activities_by_sport_month
+select
+  date_trunc('month', date_dt) as month,
+  modified_sport as sport,
+  count(*) as number_of_activities,
+  sum(activity_hours) as activity_hours
+from activities
+where date_dt >= '2022-01-01'
+group by 1,2 order by 1 desc, 2
+```
 
+## Sport Stats by Month
+<BarChart 
+    data={activities_by_sport_month} 
+    x=month
+    series=sport
+    y=activity_hours 
+/>
 
+## 100km Challenge
+In February, we want to run 100 km. Create a visualization for this here:
 
-# Share with Evidence Cloud
+```sql running_by_day
+select
+*, 
+sum(running_km) OVER (order by date asc) as cumulative_distance
+from (
+select
+  date_dt,
+  date,
+  sum(activity_distance/1000) as running_km,
+  sum(activity_hours) as activity_hours
+from dates
+full outer join activities
+on dates.date = activities.date_dt
+and activities.modified_sport = 'Run' 
+where date between '2023-12-01' and '2023-12-31'
+group by 1,2
+)
+```
 
-Evidence Cloud is the easiest way to securely share your project. 
-
-- Get your project online
-- Authenticate users
-- Schedule data refreshes
-
-<BigLink href='https://du3tapwtcbi.typeform.com/waitlist?utm_source=template&typeform-source=template'>Deploy to Evidence Cloud &rarr;</BigLink>
-
-You can use Netlify, Vercel or another static hosting provider to [self-host Evidence](https://docs.evidence.dev/deployment/overview).
-
-# Get Support
-
-- Message us on [Slack](https://slack.evidence.dev/)
-- Read the [Docs](https://docs.evidence.dev/)
-- Open an issue on [Github](https://github.com/evidence-dev/evidence)
+<LineChart data={running_by_day} x=date y=cumulative_distance yMax=105.0 yAxisTitle="Running Distance (km)">
+    <ReferenceLine y=100.0 label="Target"/>
+</LineChart>
