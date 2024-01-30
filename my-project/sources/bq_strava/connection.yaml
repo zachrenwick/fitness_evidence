@@ -1,0 +1,5 @@
+# This file was automatically generated
+name: bq_strava
+type: bigquery
+options:
+  authenticator: service-account

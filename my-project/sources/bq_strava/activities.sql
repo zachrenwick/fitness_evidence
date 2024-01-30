@@ -1,0 +1,1 @@
+SELECT * FROM `plenary-network-243016.strava.strava_data_materialized` as activities
