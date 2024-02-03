@@ -58,7 +58,7 @@ from dates
 full outer join activities
 on dates.date = activities.date_dt
 and activities.modified_sport = 'Run' 
-where date between '2023-12-01' and '2023-12-31'
+where date between '2024-02-01' and '2024-02-29'
 group by 1,2
 )
 ```
